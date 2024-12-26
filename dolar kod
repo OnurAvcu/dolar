@@ -1,0 +1,78 @@
+import tkinter as tk
+from tkinter import messagebox
+import requests
+from bs4 import BeautifulSoup
+from datetime import datetime
+import os
+
+def get_dollar_price():
+    url = "https://bigpara.hurriyet.com.tr/doviz/dolar/"  # Bigpara Dolar Sayfası URL
+    response = requests.get(url)
+    
+    if response.status_code != 200:
+        return "Sayfa alınamadı."
+
+    soup = BeautifulSoup(response.content, "html.parser")
+
+    # Dolar fiyatını çekeceğimiz class'ı doğru bir şekilde bulalım
+    dollar_element = soup.find("span", {"class": "value"})  # Genellikle değer class'ı ile tanımlanır
+
+    if dollar_element:
+        price_text = dollar_element.text.strip()
+        price_text = price_text.replace(",", ".")  # Virgülü noktaya çevir
+        return float(price_text)  # Sayısal değere çevir
+    return "Dolar fiyatı bulunamadı."
+
+def save_dollar_price():
+    # Dolar fiyatını alalım
+    dollar_price = get_dollar_price()
+    
+    # Geçerli tarih ve saati al
+    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
+    # Dosya yolu ve ismi
+    file_path = "dolarfiyat.txt"  # Dosya adı (aynı dizine kaydedeceğiz)
+    
+    # Dosyaya yazmak için
+    with open(file_path, "a") as file:
+        file.write(f"{current_time} - Dolar Fiyatı: {dollar_price} TL\n")
+    
+    # Kullanıcıya başarı mesajı göster
+    messagebox.showinfo("Başarılı", f"Dolar Fiyatı ve Tarih kaydedildi:\n{current_time} - {dollar_price} TL")
+    
+    # Dosya yolunu ekrana yazdır (debug için)
+    print(f"Dolar fiyatı ve tarih {os.path.abspath(file_path)} dosyasına kaydedildi.")
+
+def show_dollar_price():
+    # Dolar fiyatını alalım
+    dollar_price = get_dollar_price()
+
+    # Yeni pencereyi oluştur
+    new_window = tk.Toplevel(root)
+    new_window.title("Dolar Fiyatı")
+    
+    # Pencereye dolar fiyatını yazdır
+    label = tk.Label(new_window, text=f"Anlık Dolar Fiyatı: {dollar_price} TL", font=("Arial", 14))
+    label.pack(padx=10, pady=10)
+
+    # Pencereyi aç
+    new_window.geometry("300x100")
+
+def create_main_window():
+    global root
+    root = tk.Tk()
+    root.title("Dolar Fiyatı Uygulaması")
+    
+    # Butonları oluştur ve yerleştir
+    show_button = tk.Button(root, text="Doları Göster", font=("Arial", 14), command=show_dollar_price)
+    show_button.pack(padx=10, pady=20)
+    
+    save_button = tk.Button(root, text="Dolar Fiyatını Kaydet", font=("Arial", 14), command=save_dollar_price)
+    save_button.pack(padx=10, pady=20)
+
+    # Ana pencereyi aç
+    root.geometry("300x300")
+    root.mainloop()
+
+if __name__ == "__main__":
+    create_main_window()
